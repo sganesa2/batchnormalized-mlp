@@ -24,6 +24,9 @@ class BatchNormalizedMLP:
 
         self.cross_entropy_loss = torch.tensor(0)
 
+    @property
+    def params(self)->list[torch.Tensor]:
+        return [self.C, self.H, self.b1, self.W1, self.W2, self.b2]
 
     def _kaiming_init_all_weights(self)->None:
         """
@@ -52,30 +55,39 @@ class BatchNormalizedMLP:
         logits = l1+l2
         return logits
 
+    def _training_code(self, x:torch.Tensor, y:torch.Tensor, h:float, reg_factor:float)->None:
+        #forward pass
+        logits = self.forward(x)
+
+        for param in self.params:
+            param.grad = None
+
+        #loss computation
+        self.cross_entropy_loss = F.cross_entropy(logits, y, reduction='mean', label_smoothing=reg_factor)
+
+        #backward pass
+        self.cross_entropy_loss.backward()
+
+        #grad update
+        for param in self.params:
+            param -= h*param.grad
+
     def gradient_descent(self, x_train:torch.Tensor, y_train:torch.Tensor, epochs:int, h:float, reg_factor:float)->None:
         #optional weights initializations done
         self._kaiming_init_all_weights()
         self._squash_op_layer_params()
-        
-        params = [self.C, self.H, self.b1, self.W1, self.W2, self.b2]
 
         for _ in range(epochs):
-            #forward pass
-            logits = self.forward(x_train)
-
-            #loss computation
-            self.cross_entropy_loss = F.cross_entropy(logits, y_train, reduction='mean', label_smoothing=reg_factor)
-
-            #backward pass
-            self.cross_entropy_loss.backward()
-
-            #grad update
-            for param in params:
-                param -= h*param.grad
-                param.grad = None
+            self._training_code(x_train,y_train,h,reg_factor)
     
     def stochastic_gradient_descent(self, x_train:torch.Tensor, y_train:torch.Tensor, epochs:int, h:float, reg_factor:float)->None:
-        pass
+        self._kaiming_init_all_weights()
+        self._squash_op_layer_params()
+
+        for _ in epochs:
+            for example,label in zip(x_train, y_train):
+                self._training_code(example,label,h,reg_factor)
+
 
     def minibatch_gradient_descent(self, minibatch_size:int, x_train:torch.Tensor, y_train:torch.Tensor, epochs:int, h:float, reg_factor:float)->None:
         pass

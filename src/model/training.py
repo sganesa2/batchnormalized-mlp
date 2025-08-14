@@ -1,7 +1,6 @@
 import torch
 import torch.nn.functional as F
 
-
 class BatchNormalizedMLP:
     """
     This is a 3-layer MLP with the following required arguments:
@@ -21,6 +20,11 @@ class BatchNormalizedMLP:
         self.W1 = torch.randn((h,self.vocab_size), generator=self.generator, requires_grad=True)
         self.W2 = torch.randn((n*feature_dims,self.vocab_size), generator=self.generator, requires_grad=True)
         self.b2 = torch.randn(self.vocab_size, generator=self.generator, requires_grad=True)
+
+        self.H_bngain = torch.ones(h, requires_grad=True)
+        self.H_bnbias = torch.zeros(h, requires_grad= True)
+        self.H_bnmean = torch.zeros(h, requires_grad=True)
+        self.H_bnstd = torch.ones(h, requires_grad=True)
 
         self.cross_entropy_loss = torch.tensor(0)
 
@@ -43,11 +47,17 @@ class BatchNormalizedMLP:
         self.W1 *= 0.01
         self.W2 *= 0.01
         self.b2 *= 0
+
+    def _batchnormlayer(self, hpreact:torch.Tensor)->None:
+        hpreact = (hpreact-self.H_bnmean)/self.H_bnstd
+        hpreact = (hpreact*self.H_bngain) + self.H_bnbias
+
     
     def forward(self, x_train:torch.Tensor)->torch.Tensor:
         emb = self.C[x_train]
         emb = emb.view(-1,self.n*self.feature_dims)
         hpreact = emb@self.H
+        self._batchnormlayer(hpreact)
         h = (hpreact+self.b1).tanh()
 
         l1 = h@self.W1
@@ -82,7 +92,7 @@ class BatchNormalizedMLP:
             self._training_code(x_train,y_train,h,reg_factor)
     
     def stochastic_gradient_descent(self, x_train:torch.Tensor, y_train:torch.Tensor, epochs:int, h:float, reg_factor:float)->None:
-        self._kaiming_init_all_weights()
+        # self._kaiming_init_all_weights()
         self._squash_op_layer_params()
 
         for _ in range(epochs):
@@ -91,9 +101,9 @@ class BatchNormalizedMLP:
 
 
     def minibatch_gradient_descent(self, minibatch_size:int, x_train:torch.Tensor, y_train:torch.Tensor, epochs:int, h:float, reg_factor:float)->None:
-        self._kaiming_init_all_weights()
+        # self._kaiming_init_all_weights()
         self._squash_op_layer_params()
-        
+
         permutes = torch.randperm(x_train.shape[0], generator=self.generator)
         x_train, y_train = x_train[permutes], y_train[permutes]
         x_train_minibatches, y_train_minibatches = x_train.split(minibatch_size), y_train.split(minibatch_size)

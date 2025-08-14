@@ -56,11 +56,12 @@ class BatchNormalizedMLP:
         return logits
 
     def _training_code(self, x:torch.Tensor, y:torch.Tensor, h:float, reg_factor:float)->None:
-        #forward pass
-        logits = self.forward(x)
-
+        #zero grad
         for param in self.params:
             param.grad = None
+
+        #forward pass
+        logits = self.forward(x)
 
         #loss computation
         self.cross_entropy_loss = F.cross_entropy(logits, y, reduction='mean', label_smoothing=reg_factor)
@@ -84,10 +85,19 @@ class BatchNormalizedMLP:
         self._kaiming_init_all_weights()
         self._squash_op_layer_params()
 
-        for _ in epochs:
+        for _ in range(epochs):
             for example,label in zip(x_train, y_train):
                 self._training_code(example,label,h,reg_factor)
 
 
     def minibatch_gradient_descent(self, minibatch_size:int, x_train:torch.Tensor, y_train:torch.Tensor, epochs:int, h:float, reg_factor:float)->None:
-        pass
+        self._kaiming_init_all_weights()
+        self._squash_op_layer_params()
+        
+        permutes = torch.randperm(x_train.shape[0], generator=self.generator)
+        x_train, y_train = x_train[permutes], y_train[permutes]
+        x_train_minibatches, y_train_minibatches = x_train.split(minibatch_size), y_train.split(minibatch_size)
+
+        for _ in range(epochs):
+            for x,y in zip(x_train_minibatches,y_train_minibatches):
+                self._training_code(x,y,h,reg_factor)

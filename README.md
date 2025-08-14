@@ -8,4 +8,4 @@ This is Part 3: Activations & Gradients, BatchNorm of my implementations of Andr
 
 --
 
-**Building an fully-connected neural net but with a few additional hacks like:**<br> - BatchNormalization and Kaiming init applied at weights initialization:)
+**Building an fully-connected neural net but with a few additional hacks like:**<br> - BatchNormalization layers and additionally Kaiming init, which is applied at weights initialization:)

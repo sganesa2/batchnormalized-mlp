@@ -1,5 +1,5 @@
 import torch
-from typing import Iterator
+from typing import Iterator, Literal
 
 class Module:
     def __call__(self)->None:
@@ -8,7 +8,7 @@ class Module:
 class Linear(Module):
     def __init__(self, fan_in:int, fan_out:int, bias:bool)->None:
         self.generator = torch.Generator().manual_seed(6385189022)
-        self.W = torch.randn((fan_in,fan_out), generator=self.generator, requires_grad=True)
+        self.W = torch.randn((fan_in,fan_out), generator=self.generator)
         self.b = torch.zeros(fan_out) if bias else None
     
     def __call__(self, x:torch.Tensor)->torch.Tensor:
@@ -34,16 +34,23 @@ class Tanh(Module):
         return [self.out]
 
 class BatchNorm1d(Module):
-    def __init__(self, dim:int, momentum:float=0.001, epsilon:float = 1e-5)->None:
-        pass
+    def __init__(self, dim:int, run_type:Literal['train','inference'], flag:bool, momentum:float=0.001, epsilon:float = 1e-5)->None:
+        self.epsilon = epsilon
+        self.momentum = momentum
     
+        self.gamma = torch.ones(dim)
+        self.beta = torch.zeros(dim)
+        self.running_mean = torch.zeros(dim)
+        self.running_std = torch.ones(dim)
+        #TODO: Complete rest of batchnorm implementation
+        
+
     def __call__(self):
         pass
 
     @property
     def params(self)->list[torch.Tensor]:
         pass
-
 
 
 class Sequential:

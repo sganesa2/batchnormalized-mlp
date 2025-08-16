@@ -1,7 +1,7 @@
 import torch
 from typing import Iterator
 
-from layers import Module
+from model.layers import Module
 
 class Sequential(Module):
     def __init__(self, *args)->None:
@@ -25,7 +25,7 @@ class Sequential(Module):
     @property
     def params(self)->Iterator[torch.Tensor]:
         params = []
-        for layer in self._modules:
+        for layer in self._modules.values():
             params.extend(layer.params)
         return iter(params)
     

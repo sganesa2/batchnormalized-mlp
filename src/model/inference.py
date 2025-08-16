@@ -1,7 +1,7 @@
 import torch
 from typing import Optional 
 
-from model.train import BatchNormalizedMLP, stoi, itos
+from model.train import BatchNormalizedMLP
 
 def run_batchnormlized_mlp(no_of_words:int, trained_model:BatchNormalizedMLP, optim_type:str, initial_context:Optional[str]='...')->list[str]:
     """
@@ -30,4 +30,13 @@ def run_batchnormlized_mlp(no_of_words:int, trained_model:BatchNormalizedMLP, op
         words.append(word[:-1])
 
     return words
+
+def stoi()->dict[str,int]:
+    start_index, total_chars = 97, 26
+    stoi_dict = {chr(i):i-start_index+1 for i in range(start_index, start_index+total_chars+1)}
+    return {".":0, **stoi_dict}
+
+def itos()->dict[int,str]:
+    stoi_dict = stoi()
+    return {v:k for k,v in stoi_dict.items()}
 

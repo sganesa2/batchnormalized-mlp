@@ -1,11 +1,11 @@
 import torch
-from typing import Iterator
+from typing import Iterator, OrderedDict
 
 from model.layers import Module
 
 class Sequential(Module):
     def __init__(self, *args)->None:
-        self._modules: dict[str, Module] = {}
+        self._modules: dict[str, Module] = OrderedDict()
 
         for idx, module in enumerate(args):
             if isinstance(module, Module):
